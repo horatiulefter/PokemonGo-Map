@@ -1,0 +1,7 @@
+{
+ "name": "PokemonGo Map",
+  "description": "Live visualization of all the pokemon (with option to show gyms and pokestops) in your area.",  "image": "heroku/python",
+  "repository": "https://github.com/horatiulefter/PokemonGo-Map",
+  "keywords": ["python", "pokemon go"],
+  "addons": []
+}
