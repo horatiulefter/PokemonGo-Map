@@ -1,0 +1,8 @@
+{
+    "auth_service": "google",
+    "username": "horatiulefter@gmail.com",
+    "password": "marcelpavel",
+    "location": "44.858654,24.869996",
+    "debug": true,
+    "client_secret": "000000000000000000"
+}
