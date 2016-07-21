@@ -613,7 +613,7 @@ def main():
                      pokemonsJSON, ignore, only)
 
         print('Completed: ' + str(
-            ((step+1) + pos * .25 - .25) / (steplimit2) * 100) + '%')
+            ((step+1) + pos * .10 - .10) / (steplimit2) * 100) + '%')
 
     global NEXT_LAT, NEXT_LONG
     if (NEXT_LAT and NEXT_LONG and
