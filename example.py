@@ -591,35 +591,64 @@ def main():
     elif args.only:
         only = [i.lower().strip() for i in args.only.split(',')]
 
-   pos, x, y, dx, dy, m = 1, 0., 0., 0, -1, 240
-      conv = float(111111)                            # ~meters per degree
-      r = m/conv, m/conv / math.cos(il[0]*0.0174533)  # Conversion of radius from meters to deg
-      yield hex_transform(x,y,r,il)
-     for n in range(1,num_steps):
-         n+=1
-         for i in range(1, n):
-             x+=1
-             yield hex_transform(x,y,r,il)
-         for i in range(1, n-1):
-             y+=1
-             yield hex_transform(x,y,r,il)
-         for i in range(1, n):
-             x-=1
-             y+=1
-             yield hex_transform(x,y,r,il)
-         for i in range(1, n):
-             x-=1
-             yield hex_transform(x,y,r,il)
-         for i in range(1, n):
-             y-=1
-             yield hex_transform(x,y,r,il)
-         for i in range(1, n):
-             x+=1
-             y-=1
-             yield hex_transform(x,y,r,il)
-     for i in range(1, num_steps):
-         x+=1
-         yield hex_transform(x,y,r,il)
+    pos = 1
+    x = 0
+    y = 0
+    dx = 0
+    dy = -1
+    steplimit2 = steplimit**2
+    for step in range(steplimit2):
+        #starting at 0 index
+        debug('looping: step {} of {}'.format((step+1), steplimit**2))
+        #debug('steplimit: {} x: {} y: {} pos: {} dx: {} dy {}'.format(steplimit2, x, y, pos, dx, dy))
+        # Scan location math
+        if -steplimit2 / 2 < x <= steplimit2 / 2 and -steplimit2 / 2 < y <= steplimit2 / 2:
+            set_location_coords(x * 0.0025 + origin_lat, y * 0.0025 + origin_lon, 0)
+        if x == y or x < 0 and x == -y or x > 0 and x == 1 - y:
+            (dx, dy) = (-dy, dx)
+
+        (x, y) = (x + dx, y + dy)
+
+        process_step(args, api_endpoint, access_token, profile_response,
+                     pokemonsJSON, ignore, only)
+
+        print('Completed: ' + str(
+            ((step+1) + pos * .25 - .25) / (steplimit2) * 100) + '%')
+
+    global NEXT_LAT, NEXT_LONG
+    if (NEXT_LAT and NEXT_LONG and
+            (NEXT_LAT != FLOAT_LAT or NEXT_LONG != FLOAT_LONG)):
+        print('Update to next location %f, %f' % (NEXT_LAT, NEXT_LONG))
+        set_location_coords(NEXT_LAT, NEXT_LONG, 0)
+        NEXT_LAT = 0
+        NEXT_LONG = 0
+    else:
+        set_location_coords(origin_lat, origin_lon, 0)
+
+    register_background_thread()
+
+
+def process_step(args, api_endpoint, access_token, profile_response,
+                 pokemonsJSON, ignore, only):
+    print('[+] Searching for Pokemon at location {} {}'.format(FLOAT_LAT, FLOAT_LONG))
+    origin = LatLng.from_degrees(FLOAT_LAT, FLOAT_LONG)
+    step_lat = FLOAT_LAT
+    step_long = FLOAT_LONG
+    parent = CellId.from_lat_lng(LatLng.from_degrees(FLOAT_LAT,
+                                                     FLOAT_LONG)).parent(15)
+    h = get_heartbeat(args.auth_service, api_endpoint, access_token,
+                      profile_response)
+    hs = [h]
+    seen = {}
+
+    for child in parent.children():
+        latlng = LatLng.from_point(Cell(child).get_center())
+        set_location_coords(latlng.lat().degrees, latlng.lng().degrees, 0)
+        hs.append(
+            get_heartbeat(args.auth_service, api_endpoint, access_token,
+                          profile_response))
+    set_location_coords(step_lat, step_long, 0)
+    visible = []
 
     for hh in hs:
         try:
@@ -689,7 +718,7 @@ def clear_stale_pokemons():
             del pokemons[pokemon_key]
 
 
-def register_background_thread(initial_registration=True):
+def register_background_thread(initial_registration=False):
     """
     Start a background thread to search for Pokemon
     while Flask is still able to serve requests for the map
