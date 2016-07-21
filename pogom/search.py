@@ -36,16 +36,12 @@ def send_map_request(api, position):
         return False
 
 
-def generate_location_steps(initial_location, num_steps):
-    pos, x, y, dx, dy = 1, 0, 0, 0, -1
+def generate_location_steps(il, num_steps):
+     pos, x, y, dx, dy, m = 1, 0., 0., 0, -1, 240
+      conv = float(111111)                            # ~meters per degree
+      r = m/conv, m/conv / math.cos(il[0]*0.0174533)  # Conversion of radius from meters to deg
+      yield hex_transform(x,y,r,il)
 
-    while -num_steps / 2 < x <= num_steps / 2 and -num_steps / 2 < y <= num_steps / 2:
-        yield (x * 0.0012 + initial_location[0], y * 0.0012 + initial_location[1], 0)
-
-        if x == y or (x < 0 and x == -y) or (x > 0 and x == 1 - y):
-            dx, dy = -dy, dx
-
-        x, y = x + dx, y + dy
 
 
 def login(args, position):
